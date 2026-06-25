@@ -1,0 +1,12 @@
+{
+  "name": "concord",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:all": "npm run build --workspaces",
+    "dev:all": "npm run dev --workspaces"
+  }
+}

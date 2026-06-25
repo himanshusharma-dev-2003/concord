@@ -1,0 +1,35 @@
+{
+  "name": "concord-sync-server",
+  "version": "0.1.0",
+  "private": true,
+  "bin": {
+    "concord-editor": "./bin/editor.js"
+  },
+  "scripts": {
+    "dev": "cross-env NODE_OPTIONS=\"--experimental-sqlite\" tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:init": "psql -U postgres -f src/persistence/schema.sql"
+  },
+  "dependencies": {
+    "concord-core": "file:../../packages/core",
+    "@fastify/static": "^6.12.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.5",
+    "fastify": "^4.28.1",
+    "jsonwebtoken": "^9.0.2",
+    "open": "^11.0.0",
+    "pg": "^8.12.0",
+    "picocolors": "^1.1.1",
+    "socket.io": "^4.7.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^20.14.0",
+    "@types/pg": "^8.11.6",
+    "cross-env": "^10.1.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.4.0"
+  }
+}

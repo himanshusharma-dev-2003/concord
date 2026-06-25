@@ -1,0 +1,16 @@
+{
+  "name": "concord-core",
+  "version": "0.1.0",
+  "description": "Standalone Yjs-style RGA CRDT core for collaborative text editing",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}
