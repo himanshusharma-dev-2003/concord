@@ -63,139 +63,106 @@ export class RgaDocument {
     }
   }
 
-  // ==================== Serialization ====================
+  // ==================== Serialization & Traversal ====================
 
-  toString(): string {
-    const visible: RGANode[] = [];
+  /**
+   * Generates the linearized list of all nodes in the document using a depth-first
+   * traversal of the leftOrigin tree, sorting concurrent siblings deterministically.
+   */
+  private getNodesInOrder(): RGANode[] {
+    const result: RGANode[] = [];
+    const childrenOf = new Map<string, RGANode[]>();
 
+    // Group all nodes by their parent (leftOrigin)
     for (const node of this.nodes.values()) {
-      if (!node.deleted && node.id !== ROOT_ID) {
-        visible.push(node);
+      if (node.id.clientId === ROOT_ID.clientId && node.id.clock === ROOT_ID.clock) {
+        continue;
       }
+      const parentKey = node.leftOrigin ? idToKey(node.leftOrigin) : 'root';
+      if (!childrenOf.has(parentKey)) {
+        childrenOf.set(parentKey, []);
+      }
+      childrenOf.get(parentKey)!.push(node);
     }
 
-    if (visible.length === 0) return '';
+    // Sort sibling nodes by ID to ensure deterministic order (smaller ID wins)
+    for (const children of childrenOf.values()) {
+      children.sort((a, b) => compareIDs(a.id, b.id));
+    }
 
-    // Deterministic sort:
-    // 1. Nodes with earlier leftOrigin come first
-    // 2. For same leftOrigin, smaller ID wins (clientId then clock)
-    visible.sort((a, b) => {
-      const aLeftKey = a.leftOrigin ? idToKey(a.leftOrigin) : 'root';
-      const bLeftKey = b.leftOrigin ? idToKey(b.leftOrigin) : 'root';
+    // Depth-first traversal from the root node
+    const traverse = (nodeId: ID) => {
+      const key = idToKey(nodeId);
+      const children = childrenOf.get(key);
+      if (!children) return;
 
-      if (aLeftKey !== bLeftKey) {
-        // Root insertions should come before any other leftOrigin
-        if (aLeftKey === 'root') return -1;
-        if (bLeftKey === 'root') return 1;
-        return aLeftKey.localeCompare(bLeftKey);
+      for (const child of children) {
+        result.push(child);
+        traverse(child.id);
       }
+    };
 
-      return compareIDs(a.id, b.id);
-    });
+    traverse(ROOT_ID);
+    return result;
+  }
 
-    return visible.map(n => n.char).join('');
+  toString(): string {
+    const ordered = this.getNodesInOrder();
+    return ordered
+      .filter(n => !n.deleted)
+      .map(n => n.char)
+      .join('');
   }
 
   // ==================== Internal Helpers ====================
 
-  private findOriginsAtPosition(position: number): [ID | null, ID | null] {
-    let current = this.nodes.get(idToKey(ROOT_ID))!;
-    let visibleIndex = 0;
-    let lastVisible: RGANode = current;
+  private findOriginsAtPosition(position: number): [ID, ID | null] {
+    const ordered = this.getNodesInOrder();
+    let visibleCount = 0;
+    let lastVisibleId = ROOT_ID;
 
-    while (true) {
-      const next = this.findNextVisible(current);
-      if (!next) break;
-
-      if (!next.deleted) {
-        if (visibleIndex === position) {
-          // Insert before this visible node
-          return [lastVisible.id, next.id];
+    for (const node of ordered) {
+      if (!node.deleted) {
+        if (visibleCount === position) {
+          return [lastVisibleId, node.id];
         }
-        visibleIndex++;
-        lastVisible = next;
+        visibleCount++;
+        lastVisibleId = node.id;
       }
-      current = next;
     }
 
-    // Append at the end
-    return [lastVisible.id, null];
+    return [lastVisibleId, null];
   }
 
   private getVisibleNodeAtPosition(position: number): RGANode | null {
-    let current = this.nodes.get(idToKey(ROOT_ID))!;
-    let visibleIndex = 0;
+    const ordered = this.getNodesInOrder();
+    let visibleCount = 0;
 
-    while (true) {
-      const next = this.findNextVisible(current);
-      if (!next) break;
-
-      if (!next.deleted) {
-        if (visibleIndex === position) {
-          return next;
+    for (const node of ordered) {
+      if (!node.deleted) {
+        if (visibleCount === position) {
+          return node;
         }
-        visibleIndex++;
+        visibleCount++;
       }
-      current = next;
     }
     return null;
   }
 
   private integrate(newNode: RGANode): void {
     this.nodes.set(idToKey(newNode.id), newNode);
-
-    // The node is now part of the graph.
-    // Actual linearization happens lazily in findNextVisible / toString.
-    // TODO: Implement a more aggressive conflict-resolution walk
-    //       when multiple items share the same leftOrigin/rightOrigin pair.
-    //       Current simple ID tie-breaker is sufficient for most cases.
-  }
-
-  private findNextVisible(start: RGANode): RGANode | null {
-    const candidates: RGANode[] = [];
-
-    for (const node of this.nodes.values()) {
-      if (node.leftOrigin && this.idsEqual(node.leftOrigin, start.id)) {
-        candidates.push(node);
-      }
-    }
-
-    if (candidates.length === 0) {
-      if (start.rightOrigin) {
-        const rightNode = this.nodes.get(idToKey(start.rightOrigin));
-        if (rightNode) {
-          return this.findNextVisible(rightNode);
-        }
-      }
-      return null;
-    }
-
-    // Sort by ID to get deterministic order among concurrent siblings
-    candidates.sort((a, b) => compareIDs(a.id, b.id));
-
-    return candidates[0];
-  }
-
-  private idsEqual(a: ID, b: ID): boolean {
-    return a.clientId === b.clientId && a.clock === b.clock;
   }
 
   // ==================== Debugging / Inspection ====================
 
   /**
-   * Returns all nodes (including tombstones) for testing and debugging.
+   * Returns all nodes (including tombstones) in tree order.
    */
   getAllNodes(): RGANode[] {
-    return Array.from(this.nodes.values());
+    return [this.nodes.get(idToKey(ROOT_ID))!, ...this.getNodesInOrder()];
   }
 
   getClientId(): ClientID {
     return this.clientId;
   }
-
-  /**
-   * TODO: Add a garbageCollection() method that removes tombstones
-   * whose deletion has been acknowledged by all known peers.
-   * This requires vector clocks or a separate GC protocol.
-   */
 }

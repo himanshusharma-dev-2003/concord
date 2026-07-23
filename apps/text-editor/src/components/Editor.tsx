@@ -20,6 +20,29 @@ interface PresenceUser {
 
 const COLORS = ['#ef4444', '#f97316', '#8b5cf6', '#ec4899', '#3b82f6'];
 
+/**
+ * Calculates the exact diff (insertion and deletion ranges) between two strings
+ * using a fast prefix-suffix scan.
+ */
+function getDiff(oldText: string, newText: string): { start: number; deleteCount: number; insertText: string } {
+  let start = 0;
+  while (start < oldText.length && start < newText.length && oldText[start] === newText[start]) {
+    start++;
+  }
+
+  let oldEnd = oldText.length - 1;
+  let newEnd = newText.length - 1;
+  while (oldEnd >= start && newEnd >= start && oldText[oldEnd] === newText[newEnd]) {
+    oldEnd--;
+    newEnd--;
+  }
+
+  const deleteCount = oldEnd - start + 1;
+  const insertText = newText.slice(start, newEnd + 1);
+
+  return { start, deleteCount, insertText };
+}
+
 export function Editor({ documentId, token, userId, documentTitle, onBack }: EditorProps) {
   const [doc, setDoc] = useState<RgaDocument | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
@@ -201,22 +224,22 @@ export function Editor({ documentId, token, userId, documentTitle, onBack }: Edi
     const currentText = doc.toString();
     if (newText === currentText) return;
 
-    let i = 0;
-    while (i < currentText.length && i < newText.length && currentText[i] === newText[i]) i++;
+    const { start, deleteCount, insertText } = getDiff(currentText, newText);
 
-    if (newText.length > currentText.length) {
-      const charsToInsert = newText.slice(i);
-      for (let j = 0; j < charsToInsert.length; j++) {
-        const node = doc.insert(i + j, charsToInsert[j]);
-        socket.emit('crdt-op', { documentId, op: node });
-      }
-    } else if (newText.length < currentText.length) {
-      const deleteCount = currentText.length - newText.length;
-      for (let j = 0; j < deleteCount; j++) {
-        const deletedNode = doc.delete(i);
-        if (deletedNode) socket.emit('crdt-op', { documentId, op: deletedNode });
+    // 1. Process deletions
+    for (let j = 0; j < deleteCount; j++) {
+      const deletedNode = doc.delete(start);
+      if (deletedNode) {
+        socket.emit('crdt-op', { documentId, op: deletedNode });
       }
     }
+
+    // 2. Process insertions
+    for (let j = 0; j < insertText.length; j++) {
+      const node = doc.insert(start + j, insertText[j]);
+      socket.emit('crdt-op', { documentId, op: node });
+    }
+
     setDoc(doc);
     emitCursorMove();
   }, [doc, socket, documentId, emitCursorMove]);

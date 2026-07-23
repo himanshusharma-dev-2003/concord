@@ -70,10 +70,12 @@ describe('RgaDocument', () => {
     docA.insert(0, 'H');
     const remoteW = docB.insert(0, 'W');
     docA.applyRemoteOp(remoteW);
-    docA.insert(1, 'o'); // local after merge
+    docA.insert(1, 'o'); // local after merge (inserts after 'H')
 
-    // With our ID-based ordering (client 1 < client 2), result is "HWo"
-    expect(docA.toString()).toBe('HWo');
+    // Correct RGA tree structure is: ROOT -> H -> o, and ROOT -> W.
+    // Depth-first traversal order must be: H, o, W.
+    // The previous buggy implementation placed 'o' after 'W' due to flat key sorting.
+    expect(docA.toString()).toBe('HoW');
   });
 });
 
@@ -228,5 +230,29 @@ describe('CRDT Convergence Properties', () => {
     const result2 = freshC.toString();
 
     expect(result1).toBe(result2);
+  });
+
+  it('PROOF: correct depth-first sibling ordering is maintained under complex branches', () => {
+    // Site A inserts 'X'
+    const nodeX = siteA.insert(0, 'X');
+    // Site B concurrently inserts 'Y' at same position
+    const nodeY = siteB.insert(0, 'Y');
+
+    // Cross-merge
+    siteA.applyRemoteOp(nodeY);
+    siteB.applyRemoteOp(nodeX);
+
+    // Site A client ID is 10, Site B is 20. Deterministic sort puts 'X' before 'Y' -> 'XY'
+    expect(siteA.toString()).toBe('XY');
+
+    // Now siteA inserts 'W' after 'X'
+    const nodeW = siteA.insert(1, 'W'); // should be inserted immediately after 'X'
+    siteB.applyRemoteOp(nodeW);
+
+    // Tree structure: ROOT -> X -> W, and ROOT -> Y.
+    // Traversal must be depth-first: ROOT -> X -> W -> Y.
+    // Result must be 'XWY' on both sites.
+    expect(siteA.toString()).toBe('XWY');
+    expect(siteB.toString()).toBe('XWY');
   });
 });

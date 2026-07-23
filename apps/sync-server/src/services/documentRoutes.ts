@@ -17,7 +17,17 @@ export async function documentRoutes(fastify: FastifyInstance) {
     });
 
     // Create a new document
-    fastify.post('/documents', async (request: AuthenticatedRequest, reply) => {
+    fastify.post('/documents', {
+      schema: {
+        body: {
+          type: 'object',
+          properties: {
+            title: { type: 'string', maxLength: 100 },
+            id: { type: 'string', pattern: '^[a-zA-Z0-9_-]+$' }
+          }
+        }
+      }
+    }, async (request: AuthenticatedRequest, reply) => {
       const userId = request.user!.userId;
       const { title, id } = request.body as { title?: string; id?: string };
 
@@ -28,7 +38,17 @@ export async function documentRoutes(fastify: FastifyInstance) {
     });
 
     // Get a specific document (must be owner or have share)
-    fastify.get('/documents/:id', async (request: AuthenticatedRequest, reply) => {
+    fastify.get('/documents/:id', {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string' }
+          }
+        }
+      }
+    }, async (request: AuthenticatedRequest, reply) => {
       const userId = request.user!.userId;
       const { id } = request.params as { id: string };
 
@@ -42,7 +62,23 @@ export async function documentRoutes(fastify: FastifyInstance) {
     });
 
     // Create share link
-    fastify.post('/documents/:id/share', async (request: AuthenticatedRequest, reply) => {
+    fastify.post('/documents/:id/share', {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string' }
+          }
+        },
+        body: {
+          type: 'object',
+          properties: {
+            permission: { type: 'string', enum: ['read', 'edit'] }
+          }
+        }
+      }
+    }, async (request: AuthenticatedRequest, reply) => {
       const userId = request.user!.userId;
       const { id } = request.params as { id: string };
       const { permission = 'edit' } = request.body as { permission?: 'read' | 'edit' };
@@ -58,12 +94,18 @@ export async function documentRoutes(fastify: FastifyInstance) {
   });
 
   // Public join via share token (no auth required)
-  fastify.get('/join', async (request, reply) => {
-    const { token } = request.query as { token?: string };
-
-    if (!token) {
-      return reply.code(400).send({ error: 'Missing share token' });
+  fastify.get('/join', {
+    schema: {
+      querystring: {
+        type: 'object',
+        required: ['token'],
+        properties: {
+          token: { type: 'string', minLength: 1 }
+        }
+      }
     }
+  }, async (request, reply) => {
+    const { token } = request.query as { token: string };
 
     const result = await docService.getDocumentByShareToken(token);
     if (!result) {

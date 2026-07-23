@@ -1,6 +1,5 @@
 import Fastify from 'fastify';
 import { Server as SocketIOServer } from 'socket.io';
-import { createServer } from 'http';
 import { DocumentService } from './services/documentService';
 import { SyncService } from './websocket/sync';
 import { authRoutes } from './services/authRoutes';
@@ -27,7 +26,7 @@ fastify.addHook('onRequest', async (request, reply) => {
 });
 const io = new SocketIOServer(fastify.server, {
   cors: {
-    origin: '*',
+    origin: allowedOrigin,
     methods: ['GET', 'POST'],
   },
 });

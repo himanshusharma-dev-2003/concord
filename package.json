@@ -5,6 +5,10 @@
     "packages/*",
     "apps/*"
   ],
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=9"
+  },
   "scripts": {
     "dev": "pnpm --parallel --filter concord-sync-server --filter concord-text run dev",
     "build": "pnpm --filter concord-core run build && pnpm --filter concord-sync-server run build && pnpm --filter concord-text run build",

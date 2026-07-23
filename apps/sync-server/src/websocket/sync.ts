@@ -67,8 +67,9 @@ export class SyncService {
       // 2. Get current snapshot (if exists)
       let snapshot: RGANode[] | null = docRecord.snapshot;
 
-      // 3. Get all operations since document creation (or since last snapshot)
-      const ops = await this.docService.getOperationsSince(documentId);
+      // 3. Get only the operations created after the snapshot was saved (if snapshot exists)
+      const sinceDate = snapshot && docRecord.updated_at ? new Date(docRecord.updated_at) : undefined;
+      const ops = await this.docService.getOperationsSince(documentId, sinceDate);
 
       // 4. Send initial state to the joining client
       socket.emit('initial-state', {

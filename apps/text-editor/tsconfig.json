@@ -12,5 +12,12 @@
     "types": ["vite/client"]
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "src/App.js",
+    "src/main.js",
+    "src/components/AuthForm.js",
+    "src/components/DocumentList.js",
+    "src/components/Editor.js"
+  ]
 }
