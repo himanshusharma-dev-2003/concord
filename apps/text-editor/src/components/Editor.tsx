@@ -28,6 +28,7 @@ export function Editor({ documentId, token, userId, documentTitle, onBack }: Edi
   const [status, setStatus] = useState<'connecting' | 'connected' | 'offline'>('connecting');
   const [title, setTitle] = useState(documentTitle);
   const [showCmd, setShowCmd] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -235,11 +236,19 @@ export function Editor({ documentId, token, userId, documentTitle, onBack }: Edi
     }
   };
 
+  const showToast = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2500);
+  };
+
   const handleShare = () => {
     const url = new URL(window.location.href);
     url.searchParams.set('room', documentId);
-    navigator.clipboard.writeText(url.toString());
-    alert('Link copied to clipboard!');
+    navigator.clipboard.writeText(url.toString()).then(() => {
+      showToast('🔗 Share link copied to clipboard');
+    }).catch(() => {
+      showToast('Failed to copy link — please copy the URL manually');
+    });
   };
 
   // Helper to render remote cursors
@@ -388,6 +397,28 @@ export function Editor({ documentId, token, userId, documentTitle, onBack }: Edi
               </div>
             </div>
           </div>
+        </div>
+      )}
+      {/* Toast Notification */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '32px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          background: 'rgba(30, 34, 53, 0.95)',
+          border: '1px solid rgba(255,255,255,0.12)',
+          color: 'var(--text-main)',
+          padding: '12px 20px',
+          borderRadius: '10px',
+          fontSize: '14px',
+          fontWeight: 500,
+          zIndex: 200,
+          backdropFilter: 'blur(12px)',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+          animation: 'slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}>
+          {toast}
         </div>
       )}
     </div>

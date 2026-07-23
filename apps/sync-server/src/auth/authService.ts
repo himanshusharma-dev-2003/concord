@@ -1,6 +1,6 @@
 import { query } from '../persistence/db';
 import bcrypt from 'bcryptjs';
-import { signToken, JwtPayload } from './jwt';
+import { signToken, verifyToken, JwtPayload } from './jwt';
 
 export interface User {
   id: number;
@@ -52,6 +52,6 @@ export class AuthService {
   }
 
   verifyToken(token: string): JwtPayload | null {
-    return require('./jwt').verifyToken(token);
+    return verifyToken(token);
   }
 }

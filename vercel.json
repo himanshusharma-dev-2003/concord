@@ -1,5 +1,9 @@
 {
-  "buildCommand": "npm run build:all",
+  "_comment": "This deploys ONLY the frontend (concord-text). The sync server (concord-sync-server) must be deployed separately on a platform that supports persistent WebSocket connections (e.g. Railway, Render, Fly.io). Vercel serverless functions do not support long-lived WebSocket connections.",
+  "buildCommand": "pnpm --filter concord-core run build && pnpm --filter concord-text run build",
   "outputDirectory": "apps/text-editor/dist",
-  "framework": "vite"
+  "framework": "vite",
+  "env": {
+    "VITE_API_URL": "https://your-sync-server-url.example.com"
+  }
 }

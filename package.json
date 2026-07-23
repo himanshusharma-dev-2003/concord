@@ -6,9 +6,9 @@
     "apps/*"
   ],
   "scripts": {
-    "build:all": "npm run build --workspaces",
-    "dev:all": "npm run dev --workspaces",
-    "build": "npm --prefix packages/core run build && npm --prefix apps/sync-server run build && npm --prefix apps/text-editor run build",
-    "start": "npm run start -w concord-sync-server"
+    "dev": "pnpm --parallel --filter concord-sync-server --filter concord-text run dev",
+    "build": "pnpm --filter concord-core run build && pnpm --filter concord-sync-server run build && pnpm --filter concord-text run build",
+    "test": "pnpm --filter concord-core run test:run",
+    "start": "pnpm --filter concord-sync-server run start"
   }
 }
