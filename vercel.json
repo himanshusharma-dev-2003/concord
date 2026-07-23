@@ -3,6 +3,12 @@
   "buildCommand": "pnpm --filter concord-core run build && pnpm --filter concord-text run build",
   "outputDirectory": "apps/text-editor/dist",
   "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ],
   "env": {
     "VITE_API_URL": "https://your-sync-server-url.example.com"
   }
