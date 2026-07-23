@@ -226,8 +226,6 @@ Full documentation: [API.md](API.md)
 
 ## Deployment
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for full instructions.
-
 **Recommended split deployment:**
 
 | Part | Platform | Notes |
@@ -241,26 +239,10 @@ Set `VITE_API_URL` in the frontend build to point to the deployed sync server UR
 
 ## Security
 
-See [SECURITY.md](SECURITY.md) for details.
-
 - Passwords hashed with **bcrypt** (cost factor 10)
 - Sessions authenticated via **JWT** (7-day expiry, HS256)
 - The server **will warn at startup** if `JWT_SECRET` is the default value in production
 - CORS origin is configurable via `CORS_ORIGIN` environment variable
-
----
-
-## Documentation
-
-| Document | Contents |
-|---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | CRDT theory, RGA algorithm, sync protocol, persistence model |
-| [API.md](API.md) | Full REST and WebSocket API reference |
-| [DATABASE.md](DATABASE.md) | Schema, indexes, dual-DB strategy, snapshot compaction |
-| [SECURITY.md](SECURITY.md) | Auth model, known limitations, responsible disclosure |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Dev setup, branching, test requirements |
-| [ROADMAP.md](ROADMAP.md) | Planned features and engineering improvements |
-| [CHANGELOG.md](CHANGELOG.md) | Version history |
 
 ---
 
@@ -271,12 +253,7 @@ See [SECURITY.md](SECURITY.md) for details.
 
 ---
 
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md). PRs are welcome.
-
----
-
 ## License
 
 [MIT](LICENSE)
+
